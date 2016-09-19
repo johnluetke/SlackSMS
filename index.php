@@ -22,8 +22,11 @@ use SMS\Controllers\TwilioController;
 $app = new \Silex\Application();
 $app->register(new \Silex\Provider\SessionServiceProvider());
 
-$slack = new SlackClient('xoxp-no-token');
-$logger = new Logger("logs", LogLevel::DEBUG);
+$logger = new Logger("logs", LogLevel::INFO, array(
+    "logFormat" => "[{date}]\t[{level}{level-padding}]\t{message}]"
+));
+$slack = new SlackClient('xoxp-no-token', $logger);
+
 
 function oauth_request(Application $app, Request $request, Array $scopes) {
 	$query = http_build_query(array(

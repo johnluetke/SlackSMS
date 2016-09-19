@@ -12,13 +12,11 @@ use Psr\Log\LogLevel;
 
 class SlackClient extends Commander {
 
-    const LOG_DIR = "logs";
-
-    public function __construct($token) {
+    public function __construct($token, Logger $logger) {
         $interactor = new CurlInteractor();
         $interactor->setResponseFactory(new SlackResponseFactory);
         parent::__construct($token, $interactor);
-        $this->logger = new Logger(self::LOG_DIR, LogLevel::DEBUG);
+        $this->logger = $logger;
     }
 
     /**
