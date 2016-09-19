@@ -66,15 +66,15 @@ class EventController implements ControllerProviderInterface {
                 $this->slack->setToken($config->slack->token);
 
                 // TODO: still needed?
-/*
-                if ($sms->getTS() >= intval($event['ts'])) {
+///*
+                if ($config->ts >= intval($event['ts'])) {
                     $logger->notice(sprintf("Skipping potentially duplicate event. Last TS: %s, Event TS: %s", $sms->getTS(), intval($event['ts'])));
                     return $app->abort(202);
                 }
                 else {
-                    $sms->setTS($event['ts']);
+                    $config->ts = $event['ts'];
                 }
- */
+// */
 
                 $allowed_subtypes = [];
 
