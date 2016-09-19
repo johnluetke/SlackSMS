@@ -1,0 +1,7 @@
+<?php
+define("SLACK_OAUTH_URL",     "https://slack.com/oauth/authorize");
+define("SLACK_CLIENT_ID",     "");
+define("SLACK_CLIENT_SECRET", "");
+
+define("SLACK_COMMAND_TOKEN", "");
+?>

@@ -1,0 +1,26 @@
+{
+    "repositories": [
+        {
+            "type": "vcs",
+            "url": "https://github.com/BlueHerons/php-slack"
+        }
+    ],
+    "autoload": {
+        "psr-4": {
+            "SMS\\": "src/SMS"
+        }
+    },
+    "require": {
+        "php": ">=5.5",
+        "lib-curl": "*",
+        "katzgrau/klogger": "1.0.*",
+        "php-curl-class/php-curl-class": "~2.1",
+        "silex/silex": "~1.2",
+        "twig/twig": "~1.8",
+        "frlnc/php-slack": "dev-master",
+        "twilio/sdk": "^5.4"
+    },
+    "scripts": {
+        "doc": "php phpDocumentor.phar -d src/ -t docs/"
+    }
+}
