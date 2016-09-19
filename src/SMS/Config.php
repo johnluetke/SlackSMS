@@ -186,7 +186,6 @@ class Config {
         unset($this->key);
 
         $global->{$key} = $this;
-        error_log(print_r($global, true));
         file_put_contents(self::CONFIG_FILE, json_encode($global, JSON_PRETTY_PRINT));
 
         $this->global = $global;
@@ -214,7 +213,9 @@ class Config {
      */
     public function unsubscribe($user, $channel) {
         if (($i = array_search($user, $this->channels->{$channel})) !== false) {
-            unset($this->channels->{$channel}[$i]);
+            $subscribers = $this->channels->{$channel};
+            unset($subscribers[$i]);
+            $this->channels->{$channel} = array_values($subscribers);
             $this->save();
         }
     }
