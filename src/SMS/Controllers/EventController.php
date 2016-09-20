@@ -67,12 +67,12 @@ class EventController implements ControllerProviderInterface {
 
                 // TODO: still needed?
 ///*
-                if ($config->ts >= intval($event['ts'])) {
-                    $logger->notice(sprintf("Skipping potentially duplicate event. Last TS: %s, Event TS: %s", $sms->getTS(), intval($event['ts'])));
-                    return $app->abort(202);
+                if ($config->last_ts >= intval($event['ts'])) {
+                    $this->logger->notice(sprintf("Skipping potentially duplicate event. Last TS: %s, Event TS: %s", $config->last_ts, intval($event['ts'])));
+                    return new Response("Skip", 202);
                 }
                 else {
-                    $config->ts = $event['ts'];
+                    $config->last_ts = $event['ts'];
                 }
 // */
 
@@ -83,7 +83,26 @@ class EventController implements ControllerProviderInterface {
                     return new Response(sprintf("Skipped %s", $event['subtype']), 202);
                 }
                 else {
-                    $message = sprintf("#%s:\n%s: %s", $this->slack->getChannelName($event['channel']), $this->slack->getUserRealName($event['user']), $event['text']);
+                    $message = $event['text'];
+                    // Resolve usernames
+                    $matches = [];
+                    preg_match_all("/<@(U[A-Z0-9]{8})>/", $message, $matches);
+                    if (sizeof($matches) > 0) {
+                        for($i = 0; $i < sizeof($matches[1]); $i++) {
+                            $message = str_replace("<@" . $matches[1][$i] . ">", "@" . $this->slack->getUserName($matches[1][$i]), $message);
+                        }
+                    }
+
+                    // Resolve channel names
+                    $matches = [];
+                    preg_match_all("/<#([A-Z0-9]{9})>/", $message, $matches);
+                    if (sizeof($matches) > 0) {
+                        for($i = 0; $i < sizeof($matches[1]); $i++) {
+                            $message = str_replace("<#" . $matches[1][$i] . ">", "#" . $this->slack->getChannelName($matches[1][$i]), $message);
+                        }
+                    }
+
+                    $message = sprintf("#%s:\n%s: %s", $this->slack->getChannelName($event['channel']), $this->slack->getUserRealName($event['user']), $message);
 
                     $recipients = $config->getRecipients($event['channel']);
                     $this->logger->info(sprintf("Sending SMS for %s on %s to %d recipients", $event['channel'], $request->request->get("team_id"), sizeof($recipients)));

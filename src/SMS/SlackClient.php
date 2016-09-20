@@ -70,6 +70,25 @@ class SlackClient extends Commander {
      *
      * @return string a name
      */
+    public function getUserName($user) {
+        $this->logger->debug(sprintf("Looking up name for user %s", $user ));
+        $response = $this->execute("users.info", [ "user" => $user ])->getBody();
+        if (empty($response['ok']) || !$response['ok']) {
+            throw new Exception($response['error']);
+        }
+        else {
+            $this->logger->debug(print_r($response, true));
+            return $response['user']['name'];
+        }
+    }
+
+    /**
+     * Returns the 'real name' of the Slack user with the given ID
+     *
+     * @param string $user a user id
+     *
+     * @return string a name
+     */
     public function getUserRealName($user) {
         $this->logger->debug(sprintf("Looking up name for user %s", $user ));
         $response = $this->execute("users.info", [ "user" => $user ])->getBody();
