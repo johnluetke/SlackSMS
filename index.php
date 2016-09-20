@@ -13,6 +13,7 @@ use Frlnc\Slack\Http\SlackResponseFactory;
 use Katzgrau\KLogger\Logger;
 use Psr\Log\LogLevel;
 
+use SMS\Config;
 use SMS\SMS;
 use SMS\SlackClient;
 use SMS\Controllers\EventController;
@@ -53,21 +54,22 @@ $authenticate = function(Request $request) use ($app, $slack, $logger) {
 			throw new Exception($response['error']);
 		}
         else {
-            $logger->debug(print_r($response, true));
+            $logger->notice(print_r($response, true));
             $logger->info(sprintf("Installing for new team %s", $team));
-            SMS::installFor($response['team_id'], $response['bot']['bot_access_token']);
+            $config = Config::createConfig($response['team_id'], $response['access_token'], $response['bot']['bot_access_token'], $response['bot']['bot_user_id']);
+            $config->save();
 
 			return $app->redirect(sprintf("%s://%s%s", $request->getScheme(), $request->getHttpHost(), $request->getBaseUrl()));
 		}
 	}
 
 	if ($token === null) {
-		return oauth_request($app, $request, ['bot', 'commands']);
+		return oauth_request($app, $request, ['bot', 'commands', 'channels:write', 'groups:write', 'channels:read', 'groups:read']);
 	}
 	else {
 		$slack->setToken($token);
 
-		$required_scopes = ['identify', 'bot', 'commands'];
+		$required_scopes = ['identify', 'bot', 'commands', 'channels:write'];
 		$needed_scopes = array_diff($required_scopes, $app['session']->get("scopes"));
 
 		if (sizeof($needed_scopes) > 0) {
@@ -100,14 +102,20 @@ $validate = function(Request $request) use ($app, $logger) {
     }
 };
 
-$app->error(function(Exception $e, $code) {
+$app->error(function(Exception $e, $code) use ($logger) {
     //die($request->getBaseUrl());
+    $logger->error($e->getMessage());
+    $logger->error($e->getTraceAsString());
 	// Eventually, have a custom error page
 	return $e->getMessage();
 });
 
-$app->get('/', function () use ($app, $slack) {
-    die("get /");
+$app->get("/", function () {
+    return "There's nothing here :-(";
+})->before($authenticate);
+
+$app->get('/install', function () use ($app, $slack) {
+    die("/install");
 })->before($authenticate);
 
 $app->mount("/cmd", new SlashCommandController($slack, $logger));

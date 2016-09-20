@@ -20,6 +20,36 @@ class Config {
 
     const CONFIG_FILE = "config.json";
 
+    public static function createConfig($team, $token, $bot_token, $bot_user) {
+        $config = self::load();
+
+        if (!property_exists($config, $team)) {
+            $data = array(
+                "slack" => array(
+                    "auth_token" => $token,
+                    "token" => $bot_token,
+                    "bot_user" => $bot_user
+                ),
+                "service" => null,
+                "phone" => null,
+                "last_ts" => null,
+                "channels" => array()
+            );
+
+            $config->{$team} = $data;
+            return new Config($config, $team, $data);
+        }
+        else {
+            // refresh tokens on team
+            $c = $config->{$team};
+            $c->slack->token = $bot_token;
+            $c->slack->bot_user = $bot_user;
+            $c->slack->auth_token = $token;
+            return new Config($config, $team, $c);
+        }
+    }
+
+
     /**
      * Retrieve configuration from a Slack Team ID
      *

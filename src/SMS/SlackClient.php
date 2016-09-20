@@ -20,6 +20,30 @@ class SlackClient extends Commander {
     }
 
     /**
+     * Adds a user to a channel or group
+     *
+     * @param string $user a Slack user id
+     * @param string $channel a Slack channel or group id
+     */
+    public function addUserToChannel($user, $channel) {
+        $isGroup = substr($channel, 0, 1) == "G";
+        $response = $this->execute(!$isGroup ? "channels.invite" : "groups.invite", [ "channel" => $channel, "user" => $user ])->getBody();
+         if (empty($response['ok']) || !$response['ok']) {
+            throw new Exception($response['error']);
+        }
+    }
+
+    public function getUserIDByToken($token) {
+        $response = $this->execute("auth.test")->getBody();
+         if (empty($response['ok']) || !$response['ok']) {
+            throw new Exception($response['error']);
+        }
+         else {
+             return $response['user_id'];
+        }
+    }
+
+    /**
      * Returns the name of a given channel or group
      *
      * @param string $channel a channel or group id
@@ -79,6 +103,18 @@ class SlackClient extends Commander {
             $this->logger->debug(print_r($response, true));
             return !empty($response['user']['profile']['phone']);
         }
+    }
+
+    public function isUserInChannel($user, $channel) {
+        $isGroup = substr($channel, 0, 1) == "G";
+        $response = $this->execute(!$isGroup ? "channels.info" : "groups.info", [ "channel" => $channel, "user" => $user ])->getBody();
+         if (empty($response['ok']) || !$response['ok']) {
+            throw new Exception($response['error']);
+         }
+         else {
+            
+            return in_array($user, $response['channel']['members']);
+         }
     }
 
     /**
