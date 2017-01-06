@@ -3,7 +3,6 @@
 
 composer.lock
 config.json
-config.php
 
 docs/
 logs/
