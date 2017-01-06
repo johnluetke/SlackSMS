@@ -20,6 +20,12 @@ class Config {
 
     const CONFIG_FILE = "config.json";
 
+    public static function isInstalledFor($team) {
+        $config = self::load();
+
+        return property_exists($config, $team);
+    }
+
     public static function createConfig($team, $token, $bot_token, $bot_user) {
         $config = self::load();
 
@@ -36,8 +42,7 @@ class Config {
                 "channels" => array()
             );
 
-            $config->{$team} = $data;
-            return new Config($config, $team, $data);
+            return new Config($team, $data);
         }
         else {
             // refresh tokens on team
@@ -45,7 +50,7 @@ class Config {
             $c->slack->token = $bot_token;
             $c->slack->bot_user = $bot_user;
             $c->slack->auth_token = $token;
-            return new Config($config, $team, $c);
+            return new Config($team, $c);
         }
     }
 
@@ -62,7 +67,7 @@ class Config {
 
         foreach ($config as $key => $entry) {
             if ($key == $team) {
-                return new Config($config, $key, $entry);
+                return new Config($key, $entry);
             }
         }
 
@@ -85,7 +90,7 @@ class Config {
             }
             else {
                 if ($entry->twilio->sid == $sid) {
-                    return new Config($config, $key, $entry);
+                    return new Config($key, $entry);
                 }
             }
         }
@@ -115,26 +120,20 @@ class Config {
     /**
      * @ignore
      */
-    private $global;
-    /**
-     * @ignore
-     */
     private $key;
 
     /**
      * Create a Config object.
      *
-     * @param StdClass $global a StdClass containing the configuration loaded from disk
      * @param string $key a key for referencing this Config globally
      * @param StdClass $obj a StdClass containing configuration properties
      *
      * @internal
      */
-    private function __construct($global, $key, $obj) {
-        $this->global = $global;
+    private function __construct($key, $obj) {
         $this->key = $key;
 
-        if (is_object($obj)) {
+        if (is_object($obj) || is_array($obj)) {
             foreach ($obj as $property => $value) {
                 $this->{$property} = $value;
             }
@@ -209,17 +208,15 @@ class Config {
      * Save this configuration to disk
      */
     public function save() {
-        $global = $this->global;
+        $global = self::load();
         $key = $this->key;
+        $temp = clone $this;
 
-        unset($this->global);
-        unset($this->key);
+        unset($temp->global);
+        unset($temp->key);
 
-        $global->{$key} = $this;
+        $global->{$key} = $temp;
         file_put_contents(self::CONFIG_FILE, json_encode($global, JSON_PRETTY_PRINT));
-
-        $this->global = $global;
-        $this->key = $key;
     }
 
     /**
