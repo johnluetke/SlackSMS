@@ -1,4 +1,7 @@
 <?php
+/**
+ *
+ */
 namespace SMS\Controllers;
 
 use Exception;
@@ -15,18 +18,51 @@ use Twilio\Rest\Client;
 
 use SMS\Config;
 use SMS\SlackClient;
-
+/**
+ * HTTP Controller for Twilio-related actions
+ *
+ * @author John Luetk <john@johnluetke.com>
+ *
+ * @since 1.0.0
+ */
 class TwilioController implements ControllerProviderInterface {
-    
+
+    /**
+     * @internal Reference to a Application instance
+     */
     private $app;
+    /**
+     * @internal reference to a Logger instance
+     */
     private $logger;
+    /**
+     * @internal reference to a SlackClient instance
+     */
     private $slack;
 
+    /**
+     * Construct a new instance of this controller. Should only be used in conjunction with
+     * Application\mount()
+     *
+     * @param SlackClient $slack
+     * @param Logger $logger
+     *
+     * @see \Silex\Application::mount
+     */
     public function __construct(SlackClient $slack, Logger $logger) {
         $this->logger = $logger;
         $this->slack = $slack;
     }
 
+    /**
+     * Automatically called when the controller is mounted.
+     *
+     * @param Application $app
+     *
+     * @return \Silex\ControllerCollection
+     *
+     * @see \Silex\Application::mount
+     */
     public function connect(Application $app) {
         $this->app = $app;
         $controllers = $app['controllers_factory'];
@@ -82,6 +118,13 @@ class TwilioController implements ControllerProviderInterface {
         return new Response(200);
     }
 
+    /**
+     * Send an SMS
+     *
+     * @param Request $request
+     *
+     * @return Response
+     */
     public function sendSMS(Request $request) {
         $team = $request->request->get("team");
         $number = preg_replace("/[^\d]/", "", $request->request->get("number"));

@@ -33,6 +33,17 @@ class SlackClient extends Commander {
         }
     }
 
+    public function getUser($user) {
+        $response = $this->execute("users.info", ["user" => $user])->getBody();
+         if (empty($response['ok']) || !$response['ok']) {
+            throw new Exception($response['error']);
+        }
+         else {
+             return $response['user'];
+        }
+
+    }
+
     public function getUserIDByToken($token) {
         $response = $this->execute("auth.test")->getBody();
          if (empty($response['ok']) || !$response['ok']) {
@@ -124,6 +135,10 @@ class SlackClient extends Commander {
         }
     }
 
+    public function isAdmin($user) {
+        return $user['is_admin'];
+    }
+
     public function isUserInChannel($user, $channel) {
         $isGroup = substr($channel, 0, 1) == "G";
         $response = $this->execute(!$isGroup ? "channels.info" : "groups.info", [ "channel" => $channel, "user" => $user ])->getBody();
@@ -165,6 +180,20 @@ class SlackClient extends Commander {
         }
     
         return null;
+    }
+
+    public function sendDirectMessage($user, $message) {
+        $response = $this->execute ("im.open", [ "user" => $user ])->getBody();
+
+        if (empty($response['ok']) || !$response['ok']) {
+            print_r($response, true);
+            throw new Exception($response['error']);
+        }
+
+        $this->execute("chat.postMessage", [
+            "channel" => $response['channel']['id'],
+            "text" => $message
+        ]);
     }
 }
 ?>

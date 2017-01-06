@@ -57,7 +57,7 @@ class EventController implements ControllerProviderInterface {
                 $event = $request->request->get("event");
                 $this->logger->info(sprintf("Received event %s for %s on %s", $event['type'], $event['channel'], $request->request->get('team')));
 
-                if (isset($event['hidden']) && $event['hidden']) {
+                if (isset($event['hidden']) && $event['hidden'] && $event['subtype'] != "message_changed") {
                     $this->logger->info(sprintf("Skipping hidden event: %s", $event['type']));
                     return new Response(202);
                 }
@@ -76,13 +76,18 @@ class EventController implements ControllerProviderInterface {
                 }
 // */
 
-                $allowed_subtypes = [];
+                $allowed_subtypes = ['message_changed'];
 
                 if (isset($event['subtype']) && !in_array($event['subtype'], $allowed_subtypes)) {
                     $this->logger->info(sprintf("Skipping unsupported message subtype: %s", $event['subtype']));
                     return new Response(sprintf("Skipped %s", $event['subtype']), 202);
                 }
                 else {
+                    if ($event['subtype'] == "message_changed") {
+                        $event = array_merge($event, $event['message']);
+                        $event['text'] = $event['text'] . " (edited)";
+                    }
+
                     $message = $event['text'];
                     // Resolve usernames
                     $matches = [];
