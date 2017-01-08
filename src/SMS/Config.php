@@ -110,7 +110,7 @@ class Config {
 
         if (sizeof($response->rows) == 1) {
             $config = $response->rows[0]->value;
-            return new Config($team, $config);
+            return new Config($config->team, $config);
         }
 
         return null;
