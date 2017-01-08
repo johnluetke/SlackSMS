@@ -4,6 +4,9 @@
  */
 namespace SMS;
 
+use \Curl\Curl;
+use \Ramsey\Uuid\Uuid;
+
 use Exception;
 
 /**
@@ -18,19 +21,22 @@ use Exception;
  */
 class Config {
 
-    const CONFIG_FILE = "config.json";
-
     public static function isInstalledFor($team) {
-        $config = self::load();
+        $url = sprintf(COUCHDB_URL, "_design/config/_view/team?key=%s");
+        $search = sprintf($url, json_encode($team));
 
-        return property_exists($config, $team);
+        $curl = new Curl();
+        $curl->setHeader('Content-Type', 'application/json');
+        $curl->setBasicAuthentication(COUCHDB_USERNAME, COUCHDB_PASSWORD);
+        $response = json_decode($curl->get($search));
+
+        return sizeof($response->rows) == 1;
     }
 
     public static function createConfig($team, $token, $bot_token, $bot_user) {
-        $config = self::load();
-
-        if (!property_exists($config, $team)) {
+        if (!Config::isInstalledFor($team)) {
             $data = array(
+                "team" => $team,
                 "slack" => array(
                     "auth_token" => $token,
                     "token" => $bot_token,
@@ -42,11 +48,18 @@ class Config {
                 "channels" => array()
             );
 
+            $url = sprintf(COUCHDB_URL, Uuid::uuid4()->toString());
+            $curl = new Curl();
+            $curl->setHeader('Content-Type', 'application/json');
+            $response = json_decode($curl->put($url, json_encode($data)));
+
+            $data['_id'] = $response->id;
+            $data['_rev'] = $response->rev;
+
             return new Config($team, $data);
         }
         else {
-            // refresh tokens on team
-            $c = $config->{$team};
+            $c = Config::getBySlackTeamID($team);
             $c->slack->token = $bot_token;
             $c->slack->bot_user = $bot_user;
             $c->slack->auth_token = $token;
@@ -63,12 +76,17 @@ class Config {
      * @return Config
      */
     public static function getBySlackTeamID($team) {
-        $config = self::load();
+        $url = sprintf(COUCHDB_URL, "_design/config/_view/team?key=%s");
+        $search = sprintf($url, json_encode($team));
 
-        foreach ($config as $key => $entry) {
-            if ($key == $team) {
-                return new Config($key, $entry);
-            }
+        $curl = new Curl();
+        $curl->setHeader('Content-Type', 'application/json');
+        $curl->setBasicAuthentication(COUCHDB_USERNAME, COUCHDB_PASSWORD);
+        $response = json_decode($curl->get($search));
+
+        if (sizeof($response->rows) == 1) {
+            $config = $response->rows[0]->value;
+            return new Config($team, $config);
         }
 
         return null;
@@ -82,39 +100,20 @@ class Config {
      * @return Config
      */
     public static function getByTwilioSid($sid) {
-        $config = self::load();
+        $url = sprintf(COUCHDB_URL, "_design/config/_view/twilio?key=%s");
+        $search = sprintf($url, json_encode($sid));
 
-        foreach ($config as $key => $entry) {
-            if (!property_exists($entry, "twilio")) {
-                continue;
-            }
-            else {
-                if ($entry->twilio->sid == $sid) {
-                    return new Config($key, $entry);
-                }
-            }
+        $curl = new Curl();
+        $curl->setHeader('Content-Type', 'application/json');
+        $curl->setBasicAuthentication(COUCHDB_USERNAME, COUCHDB_PASSWORD);
+        $response = json_decode($curl->get($search));
+
+        if (sizeof($response->rows) == 1) {
+            $config = $response->rows[0]->value;
+            return new Config($team, $config);
         }
 
         return null;
-    }
-
-    /**
-     * Load configuration from disk
-     *
-     * @return StdClass
-     *
-     * @internal
-     */
-    private static function load() {
-        $config = null;
-        if (!file_exists(self::CONFIG_FILE)) {
-            $config = new \stdClass;
-        }
-        else {
-            $config = json_decode(file_get_contents(self::CONFIG_FILE));
-        }
-
-        return $config;
     }
 
     /**
@@ -208,15 +207,24 @@ class Config {
      * Save this configuration to disk
      */
     public function save() {
-        $global = self::load();
-        $key = $this->key;
-        $temp = clone $this;
+        $data = clone $this;
+        $id = $data->_id;
+        unset($data->_id);
 
-        unset($temp->global);
-        unset($temp->key);
+        $url = sprintf(COUCHDB_URL, sprintf("%s", $id));
+        $curl = new Curl();
+        $curl->setHeader('Content-Type', 'application/json');
+        $curl->setBasicAuthentication(COUCHDB_USERNAME, COUCHDB_PASSWORD);
+        $curl->setOpt(CURLINFO_HEADER_OUT, true);
+        $response = json_decode($curl->put($url, json_encode($data)));
 
-        $global->{$key} = $temp;
-        file_put_contents(self::CONFIG_FILE, json_encode($global, JSON_PRETTY_PRINT));
+        if (!$response->ok) {
+            throw new Exception(sprintf("Could not save configuration: %s", json_encode($response)));
+        }
+        else {
+            $this->_id = $id;
+            $this->_rev = $response->rev;
+        }
     }
 
     /**

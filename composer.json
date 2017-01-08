@@ -18,7 +18,8 @@
         "silex/silex": "~1.2",
         "twig/twig": "~1.8",
         "frlnc/php-slack": "dev-master",
-        "twilio/sdk": "^5.4"
+        "twilio/sdk": "^5.4",
+        "ramsey/uuid": "^3.5"
     },
     "scripts": {
         "doc": "php phpDocumentor.phar -d src/ -t docs/"
