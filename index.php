@@ -78,7 +78,7 @@ $app->get('/install', function(Request $request) use ($app, $logger, $slack) {
         }
 
         if (Config::isInstalledFor($response['team_id'])) {
-            return $app->redirect(sprintf("/already-installed?team=%s", $response['team_id']));
+            return $app->redirect(sprintf("already-installed?team=%s", $response['team_id']));
         }
         else {
             $logger->info(sprintf("Installing for new team %s", $response['team_id']));
@@ -92,7 +92,7 @@ $app->get('/install', function(Request $request) use ($app, $logger, $slack) {
                 "bot_user_id" => $response['bot']['bot_user_id']
             ));
             $app->handle($installRequest, HttpKernelInterface::SUB_REQUEST, false);
-            return $app->redirect("/install");
+            return $app->redirect("install");
         }
     }
     else {
@@ -106,7 +106,7 @@ $app->get('/install', function(Request $request) use ($app, $logger, $slack) {
             if (!Config::isInstalledFor($app['session']->get("team"))) {
                 $logger->warning(sprintf("Have a token, but not installed for team %s. Reinstalling", $app['session']->get("team")));
                 $app['session']->set("token", null);
-                return $app->redirect("/install");
+                return $app->redirect("install");
             }
 
             $logger->debug("Slack token possessed.");
@@ -132,7 +132,7 @@ $app->get('/install', function(Request $request) use ($app, $logger, $slack) {
                 }
             }
     
-            return $app->redirect("/welcome");
+            return $app->redirect("welcome");
         }
     }
 });
