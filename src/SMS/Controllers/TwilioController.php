@@ -99,8 +99,8 @@ class TwilioController implements ControllerProviderInterface {
         $user = $this->slack->lookupUserByPhone($from);
 
         if ($user == null) {
-            $this->notice(sprintf("%s did not match a Slack user", $from));
-            return new Response(400);
+            $this->logger->notice(sprintf("%s did not match a Slack user", $from));
+            return new Response(sprintf("Unknown source phone number: %s", $from), 401);
         }
 
         $matches = [];
