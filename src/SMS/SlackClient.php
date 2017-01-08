@@ -172,7 +172,8 @@ class SlackClient extends Commander {
                     continue;
                 else {
                     $p = preg_replace("/[^\d]/", "", $user['profile']['phone']);
-                    if (strpos($phone, $p) !== false) {
+                    if (empty($p)) continue;
+                    else if (strpos($phone, $p) !== false) {
                         return $user;
                     }
                 }
