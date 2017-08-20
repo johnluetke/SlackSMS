@@ -23,6 +23,9 @@ use SMS\Controllers\TwilioController;
 
 $app = new \Silex\Application();
 $app->register(new \Silex\Provider\SessionServiceProvider());
+$app->register(new \Silex\Provider\TwigServiceProvider(), array(
+    "twig.path" => __DIR__ . "/templates"
+));
 
 $logger = new Logger("logs", LogLevel::INFO, array(
     "logFormat" => "[{date}]\t[{level}{level-padding}]\t{message}]"
@@ -59,8 +62,16 @@ $app->error(function(Exception $e, $code) use ($logger) {
     return $e->getMessage();
 });
 
-$app->get("/", function () {
-    return "There's nothing here :-(";
+$app->get("/", function () use ($app) {
+    return $app['twig']->render("index.twig");
+});
+
+$app->get("/already-installed", function() use ($app) {
+    return $app['twig']->render("already-installed.twig");
+});
+
+$app->get("/welcome", function() use ($app) {
+    return $app['twig']->render("welcome.twig");
 });
 
 $app->get('/install', function(Request $request) use ($app, $logger, $slack) {
